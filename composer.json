@@ -1,0 +1,19 @@
+{
+    "name": "doh/find-unused-bundles-bundle",
+    "description": "Find usuned bundles (or packages) for symfony 2.",
+    "require": {
+        "symfony/yaml": "~2.6",
+        "symfony/routing": "~2.6",
+        "symfony/finder": "~2.6",
+        "symfony/console": "~2.6",
+        "symfony/config": "~2.6",
+        "symfony/framework-bundle": "~2.6"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "πR",
+            "email": "chtipepere@gmail.com"
+        }
+    ]
+}
