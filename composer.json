@@ -1,7 +1,10 @@
 {
     "name": "doh/find-unused-bundles-bundle",
     "description": "Find usuned bundles (or packages) for symfony 2.",
+    "keywords": ["remove","uninstall","bundles","packages"],
+    "homepage": "https://github.com/chtipepere/FindUnusedBundles",
     "require": {
+        "php": ">=5.3.0",
         "symfony/yaml": "~2.6",
         "symfony/routing": "~2.6",
         "symfony/finder": "~2.6",
