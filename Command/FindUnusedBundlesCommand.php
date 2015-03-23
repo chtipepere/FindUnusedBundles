@@ -33,6 +33,8 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         $this->bundles          = $this->getContainer()->get('kernel')->getBundles();
         $this->loadedBundles    = $this->getContainer()->get('kernel')->getBundles();
 
+        $this->removeItSelf();
+
         $this->checkComposer( $output );
 
         $this->checkRouting( $output );
@@ -67,6 +69,9 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
 
             if (false === class_exists( $configClassName )) {
                 $configClassName = sprintf( '%s\DependencyInjection\MainConfiguration', $bundle->getNamespace() );
+                if (false === class_exists($configClassName)) {
+                    continue;
+                }
                 $config          = new $configClassName( array(), array() );
             } else {
                 if ($bundle->getName() === 'AsseticBundle') {
@@ -115,6 +120,9 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
 
             if (false === class_exists( $configClassName )) {
                 $configClassName = sprintf( '%s\DependencyInjection\MainConfiguration', $bundle->getNamespace() );
+                if (false === class_exists($configClassName)) {
+                    continue;
+                }
                 $config          = new $configClassName( array(), array() );
             } else {
                 if ($bundle->getName() === 'AsseticBundle') {
@@ -150,7 +158,6 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         $router               = $this->getContainer()->get( 'router' );
 
         foreach ($this->loadedBundles as $bundleKey => $bundle) {
-
             /** @var Route $route */
             foreach ($router->getRouteCollection()->all() as $route) {
                 $defaults = $route->getDefaults();
@@ -449,11 +456,14 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
             }
 
             if ($unusedPackages > 0) {
-                $messages = array(
-                    '',
-                    sprintf( '%d package(s) declared in composer.json seems unused', $unusedPackages ),
-                    ''
-                );
+                if ($unusedBundles > 0) {
+                    $output->writeln('');
+                }
+
+                $messages = array();
+                $messages[] = '';
+                $messages[] = sprintf( '%d package(s) declared in composer.json seems unused', $unusedPackages );
+                $messages[] = '';
 
                 foreach ($this->packages as $packageName => $packageValue) {
                     $messages[] = '- ' . $packageName;
@@ -465,4 +475,14 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
             }
         }
     }
+
+    protected function removeItSelf()
+    {
+        foreach ($this->bundles as $key => $bundle) {
+            if ($bundle->getName() == 'DohFindUnusedBundlesBundle') {
+                unset($this->bundles[$key]);
+            }
+        }
+    }
+
 }
