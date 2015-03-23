@@ -12,6 +12,9 @@
         "symfony/config": "~2.6",
         "symfony/framework-bundle": "~2.6"
     },
+    "autoload": {
+      "psr-4": { "Doh\\FindUnusedBundlesBundle\\": "" }
+    },
     "license": "MIT",
     "authors": [
         {
