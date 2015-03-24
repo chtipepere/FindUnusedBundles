@@ -5,12 +5,9 @@ namespace Doh\FindUnusedBundlesBundle\Command;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\FileLocator;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Finder\SplFileInfo;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Yaml\Yaml;
@@ -27,6 +24,8 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
     protected $loadedBundles    = array();
     protected $packages         = array();
 
+    const DOH_FIND_UNUSED_BUNDLES_BUNDLE_NAME = 'DohFindUnusedBundlesBundle';
+
     protected function configure()
     {
         $this
@@ -36,8 +35,8 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
 
     protected function execute( InputInterface $input, OutputInterface $output )
     {
-        $this->bundles          = $this->getContainer()->get('kernel')->getBundles();
-        $this->loadedBundles    = $this->getContainer()->get('kernel')->getBundles();
+        $this->setBundles($this->getContainer()->get( 'kernel' )->getBundles());
+        $this->setLoadedBundles($this->getContainer()->get( 'kernel' )->getBundles());
 
         $this->removeItSelf();
 
@@ -362,10 +361,10 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         }
     }
 
-    protected function removeItSelf()
+    public function removeItSelf()
     {
         foreach ($this->bundles as $key => $bundle) {
-            if ($bundle->getName() == 'DohFindUnusedBundlesBundle') {
+            if ($bundle->getName() == self::DOH_FIND_UNUSED_BUNDLES_BUNDLE_NAME) {
                 unset($this->bundles[$key]);
             }
         }
@@ -421,6 +420,21 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         }
 
         return $fileContent;
+    }
+
+    public function setBundles($bundles)
+    {
+        $this->bundles = $bundles;
+    }
+
+    public function getBundles()
+    {
+        return $this->bundles;
+    }
+
+    public function setLoadedBundles($bundles)
+    {
+        $this->loadedBundles = $bundles;
     }
 
 }
