@@ -1,5 +1,7 @@
 <?php
 
+namespace Doh\FindUnusedBundlesBundle\Tests;
+
 use Doh\FindUnusedBundlesBundle\Command\FindUnusedBundlesCommand;
 use Symfony\Component\HttpKernel\Tests\Bundle\BundleTest;
 

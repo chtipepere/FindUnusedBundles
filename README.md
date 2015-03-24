@@ -6,7 +6,9 @@ Find unused bundles or packages
 [![Code Coverage](https://scrutinizer-ci.com/g/chtipepere/FindUnusedBundles/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/chtipepere/FindUnusedBundles/?branch=master)
 [![Latest Stable Version](https://poser.pugx.org/doh/find-unused-bundles-bundle/v/stable.svg)](https://packagist.org/packages/doh/find-unused-bundles-bundle)
 [![Total Downloads](https://poser.pugx.org/doh/find-unused-bundles-bundle/downloads.svg)](https://packagist.org/packages/doh/find-unused-bundles-bundle)
-[![Latest Unstable Version](https://poser.pugx.org/doh/find-unused-bundles-bundle/v/unstable.svg)](https://packagist.org/packages/doh/find-unused-bundles-bundle) [![License](https://poser.pugx.org/doh/find-unused-bundles-bundle/license.svg)](https://packagist.org/packages/doh/find-unused-bundles-bundle)
+[![Latest Unstable Version](https://poser.pugx.org/doh/find-unused-bundles-bundle/v/unstable.svg)](https://packagist.org/packages/doh/find-unused-bundles-bundle)
+[![License](https://poser.pugx.org/doh/find-unused-bundles-bundle/license.svg)](https://packagist.org/packages/doh/find-unused-bundles-bundle)
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/1ac42dd7-7d59-41c9-8f0b-653353ddfd59/big.png)](https://insight.sensiolabs.com/projects/1ac42dd7-7d59-41c9-8f0b-653353ddfd59)
 
 Repository address: https://github.com/chtipepere/FindUnusedBundles
 
@@ -15,7 +17,16 @@ INSTALLATION
 ------------
 Add the bundle to your composer.json
 ```
-"doh/find-unused-bundles-bundle": "dev-master"
+"require-dev": {
+    ...,
+    "doh/find-unused-bundles-bundle": "dev-master"
+}
+```
+Add the bundle to your AppKernel
+```
+if (in_array($this->getEnvironment(), ['dev', 'test'])) {
+    $bundles[] = new Doh\FindUnusedBundlesBundle\DohFindUnusedBundlesBundle();
+}
 ```
 ----------
 Usage
