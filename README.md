@@ -28,3 +28,4 @@ Known bugs
 Todo
 -----
 * Remove and/or delete unused bundles/packages.
+* Add tests

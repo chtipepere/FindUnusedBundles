@@ -11,6 +11,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
+use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Yaml\Yaml;
 
@@ -21,7 +22,10 @@ use Symfony\Component\Yaml\Yaml;
  */
 class FindUnusedBundlesCommand extends ContainerAwareCommand
 {
-    const DOH_FIND_UNUSED_BUNDLES_BUNDLE_NAME = 'DohFindUnusedBundlesBundle';
+
+    protected $bundles          = array();
+    protected $loadedBundles    = array();
+    protected $packages         = array();
 
     protected function configure()
     {
@@ -73,6 +77,7 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         $configValues        = Yaml::parse( file_get_contents( $yamlFile[0] ) );
         $bundlesUsedInConfig = array();
 
+        /** @var Bundle $bundle */
         foreach ($this->loadedBundles as $bundleKey => $bundle) {
             $configClassName = sprintf( '%s\DependencyInjection\Configuration', $bundle->getNamespace() );
 
@@ -115,6 +120,7 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         $bundlesUsedInRouting = array();
         $router               = $this->getContainer()->get( 'router' );
 
+        /** @var Bundle $bundle */
         foreach ($this->loadedBundles as $bundleKey => $bundle) {
             /** @var Route $route */
             foreach ($router->getRouteCollection()->all() as $route) {
@@ -145,6 +151,7 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         }
 
         $bundlesUsedInCode = array();
+        /** @var Bundle $bundle */
         foreach ($this->loadedBundles as $bundleKey => $bundle) {
             $grepUsage = exec( sprintf( 'grep -R "%s" %s', addslashes( addslashes( $bundle->getNamespace() ) ),
                 $this->getContainer()->get( 'kernel' )->getRootDir() . '/../src' ) );
@@ -238,31 +245,8 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
      */
     protected function checkComposer( OutputInterface $output )
     {
-        $rootDir = $this->getContainer()->get('kernel')->getRootDir() . '/../';
-        $finder = new Finder();
-        $finder->files()->in($rootDir);
-        $finder->depth('== 0');
-        $finder->name('composer.lock');
-
-        if ($finder->count() == 0) {
-            $formatter = $this->getHelperSet()->get('formatter');
-            $errorMessages = array('', 'No composer.lock found', '');
-            $formattedBlock = $formatter->formatBlock($errorMessages, 'error');
-            $output->writeln($formattedBlock);
-            exit(1);
-        }
-
-        foreach ($finder as $file) {
-            $composerLockContent = json_decode($file->getContents(), true);
-        }
-
-        $finder = new Finder();
-        $finder->files()->in($rootDir);
-        $finder->depth('== 0');
-        $finder->name('composer.json');
-        foreach ($finder as $file) {
-            $composerContent = json_decode($file->getContents(), true);
-        }
+        $composerLockContent    = $this->getFileContent( 'composer.lock', $output );
+        $composerContent        = $this->getFileContent( 'composer.json', $output );
 
         unset($composerContent['require']['php']);
 
@@ -304,54 +288,15 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
                 if ($package['name'] == $packageName) {
                     if (isset( $package['autoload']['psr-0'] )) {
                         foreach ($package['autoload']['psr-0'] as $key => $value) {
-
-                            foreach ($this->loadedBundles as $bundle) {
-                                if (preg_match(sprintf('#%s#', str_replace('\\', '', $bundle->getNamespace())), str_replace('\\', '', $key))) {
-                                    unset($this->packages[$packageName]);
-                                } else {
-                                    $cleanedKey = str_replace( '\\', '', $key );
-                                    foreach ($composerContent['scripts']['post-install-cmd'] as $script) {
-                                        $cleanedScript = str_replace( '\\', '', $script );
-                                        if (preg_match( sprintf( '#%s#', $cleanedKey ), $cleanedScript )) {
-                                            unset( $this->packages[$packageName] );
-                                        }
-                                    }
-                                }
-                            }
+                            $this->findUsageUsingAutoload( $key, $packageName, $composerContent );
                         }
                     } elseif (isset( $package['autoload']['psr-1'] )) {
                         foreach ($package['autoload']['psr-1'] as $key => $value) {
-
-                            foreach ($this->loadedBundles as $bundle) {
-                                if (preg_match(sprintf('#%s#', str_replace('\\', '', $bundle->getNamespace())), str_replace('\\', '', $key))) {
-                                    unset($this->packages[$packageName]);
-                                } else {
-                                    $cleanedKey = str_replace( '\\', '', $key );
-                                    foreach ($composerContent['scripts']['post-install-cmd'] as $script) {
-                                        $cleanedScript = str_replace( '\\', '', $script );
-                                        if (preg_match( sprintf( '#%s#', $cleanedKey ), $cleanedScript )) {
-                                            unset( $this->packages[$packageName] );
-                                        }
-                                    }
-                                }
-                            }
+                            $this->findUsageUsingAutoload( $key, $packageName, $composerContent );
                         }
                     } elseif (isset( $package['autoload']['psr-4'] )) {
                         foreach ($package['autoload']['psr-4'] as $key => $value) {
-
-                            foreach ($this->loadedBundles as $bundle) {
-                                if (preg_match(sprintf('#%s#', str_replace('\\', '', $bundle->getNamespace())), str_replace('\\', '', $key))) {
-                                    unset($this->packages[$packageName]);
-                                } else {
-                                    $cleanedKey = str_replace( '\\', '', $key );
-                                    foreach ($composerContent['scripts']['post-install-cmd'] as $script) {
-                                        $cleanedScript = str_replace( '\\', '', $script );
-                                        if (preg_match( sprintf( '#%s#', $cleanedKey ), $cleanedScript )) {
-                                            unset( $this->packages[$packageName] );
-                                        }
-                                    }
-                                }
-                            }
+                            $this->findUsageUsingAutoload( $key, $packageName, $composerContent );
                         }
                     }
                 }
@@ -420,10 +365,62 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
     protected function removeItSelf()
     {
         foreach ($this->bundles as $key => $bundle) {
-            if ($bundle->getName() == self::DOH_FIND_UNUSED_BUNDLES_BUNDLE_NAME) {
+            if ($bundle->getName() == 'DohFindUnusedBundlesBundle') {
                 unset($this->bundles[$key]);
             }
         }
+    }
+
+    /**
+     * @param $key
+     * @param $packageName
+     * @param $composerContent
+     */
+    protected function findUsageUsingAutoload( $key, $packageName, $composerContent )
+    {
+        foreach ($this->loadedBundles as $bundle) {
+            if (preg_match( sprintf( '#%s#', str_replace( '\\', '', $bundle->getNamespace() ) ),
+                str_replace( '\\', '', $key ) )) {
+                unset( $this->packages[$packageName] );
+            } else {
+                $cleanedKey = str_replace( '\\', '', $key );
+                foreach ($composerContent['scripts']['post-install-cmd'] as $script) {
+                    $cleanedScript = str_replace( '\\', '', $script );
+                    if (preg_match( sprintf( '#%s#', $cleanedKey ), $cleanedScript )) {
+                        unset( $this->packages[$packageName] );
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param string            $filename
+     * @param OutputInterface   $output
+     *
+     * @return array
+     */
+    protected function getFileContent( $filename, OutputInterface $output )
+    {
+        $rootDir = $this->getContainer()->get( 'kernel' )->getRootDir() . '/../';
+        $finder  = new Finder();
+        $finder->files()->in( $rootDir );
+        $finder->depth( '== 0' );
+        $finder->name( $filename );
+
+        if ($finder->count() == 0) {
+            $formatter      = $this->getHelperSet()->get( 'formatter' );
+            $errorMessages  = array( '', sprintf('No %s found', $filename), '' );
+            $formattedBlock = $formatter->formatBlock( $errorMessages, 'error' );
+            $output->writeln( $formattedBlock );
+            exit( 1 );
+        }
+
+        foreach ($finder as $file) {
+            $fileContent = json_decode( $file->getContents(), true );
+        }
+
+        return $fileContent;
     }
 
 }
