@@ -4,6 +4,7 @@ namespace Doh\FindUnusedBundlesBundle\Tests;
 
 use Doh\FindUnusedBundlesBundle\Command\FindUnusedBundlesCommand;
 use Symfony\Component\HttpKernel\Tests\Bundle\BundleTest;
+use Symfony\Component\HttpKernel\Tests\Fixtures\ExtensionPresentBundle\ExtensionPresentBundle;
 use Symfony\Component\HttpKernel\Tests\Fixtures\KernelForTest;
 
 class FindUnusedBundlesCommandTest extends \PHPUnit_Framework_TestCase
@@ -135,7 +136,7 @@ class FindUnusedBundlesCommandTest extends \PHPUnit_Framework_TestCase
 
     public function testFindUsageInCode()
     {
-        $key     = 'key';
+        $key = 'key';
         $kernel = $this->getMockBuilder('Symfony\Component\HttpKernel\Tests\Fixtures\KernelForTest')
             ->disableOriginalConstructor()
             ->setMethods(array('getRootDir'))
@@ -181,13 +182,13 @@ class FindUnusedBundlesCommandTest extends \PHPUnit_Framework_TestCase
         $filename = 'composer.json';
 
         $kernel = $this->getMockBuilder('Symfony\Component\HttpKernel\Tests\Fixtures\KernelForTest')
-                       ->disableOriginalConstructor()
-                       ->setMethods(array('getRootDir'))
-                       ->getMock();
+                        ->disableOriginalConstructor()
+                        ->setMethods(array('getRootDir'))
+                        ->getMock();
 
         $kernel->expects($this->once())
-               ->method('getRootDir')
-               ->will($this->returnValue(__DIR__ . '/..'));
+                ->method('getRootDir')
+                ->will($this->returnValue(__DIR__ . '/..'));
 
         $command = $this->getMockBuilder('Doh\FindUnusedBundlesBundle\Command\FindUnusedBundlesCommand')
                         ->setMethods(array('getKernel'))
@@ -225,5 +226,38 @@ class FindUnusedBundlesCommandTest extends \PHPUnit_Framework_TestCase
         $command = new FindUnusedBundlesCommand();
         $command->setLoadedBundles($bundles);
         $this->assertEquals('foo', $command->getLoadedBundles());
+    }
+
+    public function testFindUsageUsingAutoload()
+    {
+        $key = 'Symfony\Component\HttpKernel\Tests\Fixtures\ExtensionPresentBundle';
+        $packageName = 'PackageName';
+        $composerContent = '';
+
+        $command = new FindUnusedBundlesCommand();
+        $command->setLoadedBundles(array(new ExtensionPresentBundle()));
+        $command->setPackages(array('PackageName' => 'package', 'foo' => 'bar'));
+
+        $this->assertEquals(2, count($command->getPackages()));
+        $this->invokeMethod($command, 'findUsageUsingAutoload', array($key, $packageName, $composerContent));
+        $this->assertEquals(1, count($command->getPackages()));
+    }
+
+    public function testFindUsageUsingAutoloadAndComposer()
+    {
+        $key = 'foo\bar';
+        $packageName = 'PackageName';
+        $composerContent = array();
+        $composerContent['scripts']['post-install-cmd'] = array(
+            'foo\bar'
+        );
+
+        $command = new FindUnusedBundlesCommand();
+        $command->setLoadedBundles(array(new ExtensionPresentBundle()));
+        $command->setPackages(array('PackageName' => 'package', 'foo' => 'bar'));
+
+        $this->assertEquals(2, count($command->getPackages()));
+        $this->invokeMethod($command, 'findUsageUsingAutoload', array($key, $packageName, $composerContent));
+        $this->assertEquals(1, count($command->getPackages()));
     }
 }

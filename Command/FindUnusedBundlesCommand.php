@@ -346,12 +346,11 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
      */
     protected function findUsageUsingAutoload($key, $packageName, $composerContent)
     {
-        foreach ($this->loadedBundles as $bundle) {
-            if (preg_match(sprintf('#%s#', str_replace('\\', '', $bundle->getNamespace())),
-                str_replace('\\', '', $key))) {
+        foreach ($this->getLoadedBundles() as $bundle) {
+            $cleanedKey = str_replace('\\', '', $key);
+            if (preg_match(sprintf('#%s#', str_replace('\\', '', $bundle->getNamespace())), $cleanedKey)) {
                 unset($this->packages[$packageName]);
             } else {
-                $cleanedKey = str_replace('\\', '', $key);
                 foreach ($composerContent['scripts']['post-install-cmd'] as $script) {
                     $cleanedScript = str_replace('\\', '', $script);
                     if (preg_match(sprintf('#%s#', $cleanedKey), $cleanedScript)) {
