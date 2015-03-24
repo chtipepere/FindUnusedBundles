@@ -29,11 +29,11 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
     protected function configure()
     {
         $this
-            ->setName( 'doh:unusedblundles:find' )
-            ->setDescription( 'Find unused bundles in your application' );
+            ->setName('doh:unusedblundles:find')
+            ->setDescription('Find unused bundles in your application');
     }
 
-    protected function execute( InputInterface $input, OutputInterface $output )
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $kernel = $this->getKernel();
         $this->setBundles($kernel->getBundles());
@@ -59,6 +59,9 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         $this->outputResult( $output );
     }
 
+    /**
+     * @param string $file
+     */
     protected function checkYamlFile( $file, OutputInterface $output )
     {
         $configDirectories = array( $this->getContainer()->get( 'kernel' )->getRootDir() . '/config' );
@@ -99,141 +102,141 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
             $tree           = $config->getConfigTreeBuilder();
             $configNodeName = $tree->buildTree()->getName();
 
-            if (isset( $configValues[$configNodeName] )) {
+            if (isset($configValues[$configNodeName])) {
                 $bundlesUsedInConfig[] = $bundle;
-                unset( $this->bundles[$bundleKey] );
+                unset($this->bundles[$bundleKey]);
             }
         }
 
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-            $output->writeln( sprintf( '%d bundles are loaded in Kernel, and used in %s',
-                count( $bundlesUsedInConfig ), $file ) );
+            $output->writeln(sprintf('%d bundles are loaded in Kernel, and used in %s',
+                count($bundlesUsedInConfig), $file));
         }
     }
 
-    protected function checkRouting( OutputInterface $output )
+    protected function checkRouting(OutputInterface $output)
     {
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-            $output->writeln( '----- Check Routing -----' );
+            $output->writeln('----- Check Routing -----');
         }
 
         $bundlesUsedInRouting = array();
-        $router               = $this->getContainer()->get( 'router' );
+        $router               = $this->getContainer()->get('router');
 
         /** @var Bundle $bundle */
         foreach ($this->loadedBundles as $bundleKey => $bundle) {
             /** @var Route $route */
             foreach ($router->getRouteCollection()->all() as $route) {
                 $defaults = $route->getDefaults();
-                if (isset( $defaults['_controller'] ) && preg_match( sprintf( '#%s#',
-                        addslashes( $bundle->getNamespace() ) ), $defaults['_controller'] )
+                if (isset($defaults['_controller']) && preg_match(sprintf('#%s#',
+                        addslashes($bundle->getNamespace())), $defaults['_controller'])
                 ) {
                     $bundlesUsedInRouting[] = $bundle;
-                    unset( $this->bundles[$bundleKey] );
+                    unset($this->bundles[$bundleKey]);
                     continue 2;
                 }
             }
         }
 
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-            $output->writeln( sprintf( '%d bundles loaded in Kernel are used in routing',
-                count( $bundlesUsedInRouting ) ) );
+            $output->writeln(sprintf('%d bundles loaded in Kernel are used in routing',
+                count($bundlesUsedInRouting)));
         }
     }
 
     /**
      * @param OutputInterface $output
      */
-    protected function checkCode( OutputInterface $output )
+    protected function checkCode(OutputInterface $output)
     {
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-            $output->writeln( '----- Check Code -----' );
+            $output->writeln('----- Check Code -----');
         }
 
         $bundlesUsedInCode = array();
         /** @var Bundle $bundle */
         foreach ($this->loadedBundles as $bundleKey => $bundle) {
-            $grepUsage = exec( sprintf( 'grep -R "%s" %s', addslashes( addslashes( $bundle->getNamespace() ) ),
-                $this->getContainer()->get( 'kernel' )->getRootDir() . '/../src' ) );
+            $grepUsage = exec(sprintf('grep -R "%s" %s', addslashes(addslashes($bundle->getNamespace())),
+                $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
 
-            if (strlen( $grepUsage ) > 0) {
+            if (strlen($grepUsage) > 0) {
                 $bundlesUsedInCode[] = $bundle;
-                unset( $this->bundles[$bundleKey] );
+                unset($this->bundles[$bundleKey]);
             }
         }
 
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-            $output->writeln( sprintf( '%d bundles are loaded in Kernel, and used in code',
-                count( $bundlesUsedInCode ) ) );
+            $output->writeln(sprintf('%d bundles are loaded in Kernel, and used in code',
+                count($bundlesUsedInCode)));
         }
     }
 
     /**
      * @param OutputInterface $output
      */
-    protected function checkTwigExtension( OutputInterface $output )
+    protected function checkTwigExtension(OutputInterface $output)
     {
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-            $output->writeln( '----- Check Twig Extension -----' );
+            $output->writeln('----- Check Twig Extension -----');
         }
         $bundlesUsedInTwigExtension = array();
 
         foreach ($this->loadedBundles as $bundleKey => $bundle) {
 
-            $grepTwig =  exec(sprintf( 'grep -R Twig_Extension %s | grep php | grep -v FindUnusedBundlesCommand', $bundle->getPath() ));
+            $grepTwig = exec(sprintf('grep -R Twig_Extension %s | grep php | grep -v FindUnusedBundlesCommand', $bundle->getPath()));
 
             if (strlen($grepTwig) == 0) {
                 continue;
             }
 
             if (OutputInterface::VERBOSITY_VERY_VERBOSE <= $output->getVerbosity()) {
-                $output->writeln( 'GrepTwig: ' . $grepTwig );
+                $output->writeln('GrepTwig: ' . $grepTwig);
             }
 
-            $twigExtension = explode( ' ', $grepTwig );
+            $twigExtension = explode(' ', $grepTwig);
 
-            $twigExtension = explode( ':', $twigExtension[0] );
+            $twigExtension = explode(':', $twigExtension[0]);
             $extensionPath = $twigExtension[0];
 
-            $namespace     = exec( sprintf( 'grep namespace %s', $extensionPath ) );
+            $namespace     = exec(sprintf('grep namespace %s', $extensionPath));
 
-            $twigExtension = explode( '.', $twigExtension[0] );
-            $twigExtension = explode( '/', $twigExtension[0] );
+            $twigExtension = explode('.', $twigExtension[0]);
+            $twigExtension = explode('/', $twigExtension[0]);
 
-            $extensionClassName = array_pop( $twigExtension );
-            $namespace          = explode( ' ', $namespace );
+            $extensionClassName = array_pop($twigExtension);
+            $namespace          = explode(' ', $namespace);
 
             if (OutputInterface::VERBOSITY_VERY_VERBOSE <= $output->getVerbosity()) {
-                $output->writeln( 'Namespace: ' . $namespace[1] );
+                $output->writeln('Namespace: ' . $namespace[1]);
             }
 
-            $namespace          = explode( ';', $namespace[1] );
+            $namespace          = explode(';', $namespace[1]);
             $className          = $namespace[0] . '\\' . $extensionClassName;
 
             if (OutputInterface::VERBOSITY_VERY_VERBOSE <= $output->getVerbosity()) {
-                $output->writeln( 'Classname: ' . $className );
+                $output->writeln('Classname: ' . $className);
             }
 
             $extension = unserialize(
                 sprintf(
                     'O:%d:"%s":0:{}',
-                    strlen( $className ), $className
+                    strlen($className), $className
                 )
             );
 
-            $extensionUsage = exec( sprintf( 'grep -R %s %s', $extension->getName(),
-                $this->getContainer()->get( 'kernel' )->getRootDir() . '/../src' ) );
+            $extensionUsage = exec(sprintf('grep -R %s %s', $extension->getName(),
+                $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
 
-            if (strlen( $extensionUsage ) > 0) {
+            if (strlen($extensionUsage) > 0) {
                 $bundlesUsedInTwigExtension[] = $bundle;
-                unset( $this->bundles[$bundleKey] );
+                unset($this->bundles[$bundleKey]);
                 unset($extension);
             }
         }
 
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-            $output->writeln( sprintf( '%d bundles are loaded in Kernel, and used in twig extension',
-                count( $bundlesUsedInTwigExtension ) ) );
+            $output->writeln(sprintf('%d bundles are loaded in Kernel, and used in twig extension',
+                count($bundlesUsedInTwigExtension)));
         }
 
     }
@@ -243,15 +246,15 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
      *
      * @return mixed
      */
-    protected function checkComposer( OutputInterface $output )
+    protected function checkComposer(OutputInterface $output)
     {
-        $composerLockContent    = $this->getFileContent( 'composer.lock', $output );
-        $composerContent        = $this->getFileContent( 'composer.json', $output );
+        $composerLockContent    = $this->getFileContent('composer.lock', $output);
+        $composerContent        = $this->getFileContent('composer.json', $output);
 
         unset($composerContent['require']['php']);
 
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-            $output->writeln( '----- Check Composer -----' );
+            $output->writeln('----- Check Composer -----');
         }
 
         $this->packages = $composerContent['require'];
@@ -261,17 +264,17 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
             foreach ($composerLockContent['packages'] as $packageKey => $package) {
                 if ($package['name'] == $packageName) {
 
-                    if (isset( $package['autoload']['psr-0'] )) {
+                    if (isset($package['autoload']['psr-0'])) {
                         foreach ($package['autoload']['psr-0'] as $key => $value) {
-                            $grep = exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get( 'kernel' )->getRootDir() . '/../src'));
+                            $grep = exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
                         }
-                    } elseif (isset( $package['autoload']['psr-1'] )) {
+                    } elseif (isset($package['autoload']['psr-1'])) {
                         foreach ($package['autoload']['psr-1'] as $key => $value) {
-                            $grep = exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get( 'kernel' )->getRootDir() . '/../src'));
+                            $grep = exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
                         }
-                    } elseif (isset( $package['autoload']['psr-4'] )) {
+                    } elseif (isset($package['autoload']['psr-4'])) {
                         foreach ($package['autoload']['psr-4'] as $key => $value) {
-                            $grep = exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get( 'kernel' )->getRootDir() . '/../src'));
+                            $grep = exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
                         }
                     }
                 }
@@ -286,17 +289,17 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
             $grep = null;
             foreach ($composerLockContent['packages'] as $packageKey => $package) {
                 if ($package['name'] == $packageName) {
-                    if (isset( $package['autoload']['psr-0'] )) {
+                    if (isset($package['autoload']['psr-0'])) {
                         foreach ($package['autoload']['psr-0'] as $key => $value) {
-                            $this->findUsageUsingAutoload( $key, $packageName, $composerContent );
+                            $this->findUsageUsingAutoload($key, $packageName, $composerContent);
                         }
-                    } elseif (isset( $package['autoload']['psr-1'] )) {
+                    } elseif (isset($package['autoload']['psr-1'])) {
                         foreach ($package['autoload']['psr-1'] as $key => $value) {
-                            $this->findUsageUsingAutoload( $key, $packageName, $composerContent );
+                            $this->findUsageUsingAutoload($key, $packageName, $composerContent);
                         }
-                    } elseif (isset( $package['autoload']['psr-4'] )) {
+                    } elseif (isset($package['autoload']['psr-4'])) {
                         foreach ($package['autoload']['psr-4'] as $key => $value) {
-                            $this->findUsageUsingAutoload( $key, $packageName, $composerContent );
+                            $this->findUsageUsingAutoload($key, $packageName, $composerContent);
                         }
                     }
                 }
@@ -304,8 +307,8 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         }
 
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-            $output->writeln( sprintf( '%d/%d packages are used in code',
-                count( $composerContent['require'] ) - count($this->packages), count( $composerContent['require'] ) ) );
+            $output->writeln(sprintf('%d/%d packages are used in code',
+                count($composerContent['require']) - count($this->packages), count($composerContent['require'])));
         }
 
     }
@@ -313,32 +316,32 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
     /**
      * @param OutputInterface $output
      */
-    protected function outputResult( OutputInterface $output )
+    protected function outputResult(OutputInterface $output)
     {
         $formatter = $this->getHelperSet()->get('formatter');
 
-        $unusedBundles  = count( $this->bundles );
-        $unusedPackages = count( $this->packages );
+        $unusedBundles  = count($this->bundles);
+        $unusedPackages = count($this->packages);
 
         if ($unusedBundles == 0 && $unusedPackages == 0) {
-            $messages       = array(
+            $messages = array(
                 '',
                 'Congrats! No bundles loaded in Kernel nor packages declared in composer.json seems unused.',
                 ''
             );
-            $formattedBlock = $formatter->formatBlock( $messages, 'info' );
-            $output->writeln( $formattedBlock );
+            $formattedBlock = $formatter->formatBlock($messages, 'info');
+            $output->writeln($formattedBlock);
         } else {
             if ($unusedBundles > 0) {
-                $messages = array( '', sprintf( '%d bundle(s) loaded in kernel seems unused', $unusedBundles ), '' );
+                $messages = array('', sprintf('%d bundle(s) loaded in kernel seems unused', $unusedBundles), '');
 
                 foreach ($this->bundles as $bundle) {
                     $messages[] = '- ' . $bundle->getName();
                 }
 
                 $messages[]     = '';
-                $formattedBlock = $formatter->formatBlock( $messages, 'error' );
-                $output->writeln( $formattedBlock );
+                $formattedBlock = $formatter->formatBlock($messages, 'error');
+                $output->writeln($formattedBlock);
             }
 
             if ($unusedPackages > 0) {
@@ -348,7 +351,7 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
 
                 $messages = array();
                 $messages[] = '';
-                $messages[] = sprintf( '%d package(s) declared in composer.json seems unused', $unusedPackages );
+                $messages[] = sprintf('%d package(s) declared in composer.json seems unused', $unusedPackages);
                 $messages[] = '';
 
                 foreach ($this->packages as $packageName => $packageValue) {
@@ -356,8 +359,8 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
                 }
 
                 $messages[]     = '';
-                $formattedBlock = $formatter->formatBlock( $messages, 'error' );
-                $output->writeln( $formattedBlock );
+                $formattedBlock = $formatter->formatBlock($messages, 'error');
+                $output->writeln($formattedBlock);
             }
         }
     }
@@ -367,18 +370,18 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
      * @param $packageName
      * @param $composerContent
      */
-    protected function findUsageUsingAutoload( $key, $packageName, $composerContent )
+    protected function findUsageUsingAutoload($key, $packageName, $composerContent)
     {
         foreach ($this->loadedBundles as $bundle) {
-            if (preg_match( sprintf( '#%s#', str_replace( '\\', '', $bundle->getNamespace() ) ),
-                str_replace( '\\', '', $key ) )) {
-                unset( $this->packages[$packageName] );
+            if (preg_match(sprintf('#%s#', str_replace('\\', '', $bundle->getNamespace())),
+                str_replace('\\', '', $key))) {
+                unset($this->packages[$packageName]);
             } else {
-                $cleanedKey = str_replace( '\\', '', $key );
+                $cleanedKey = str_replace('\\', '', $key);
                 foreach ($composerContent['scripts']['post-install-cmd'] as $script) {
-                    $cleanedScript = str_replace( '\\', '', $script );
-                    if (preg_match( sprintf( '#%s#', $cleanedKey ), $cleanedScript )) {
-                        unset( $this->packages[$packageName] );
+                    $cleanedScript = str_replace('\\', '', $script);
+                    if (preg_match(sprintf('#%s#', $cleanedKey), $cleanedScript)) {
+                        unset($this->packages[$packageName]);
                     }
                 }
             }
@@ -391,24 +394,24 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
      *
      * @return array
      */
-    protected function getFileContent( $filename, OutputInterface $output )
+    protected function getFileContent($filename, OutputInterface $output)
     {
-        $rootDir = $this->getContainer()->get( 'kernel' )->getRootDir() . '/../';
+        $rootDir = $this->getContainer()->get('kernel')->getRootDir() . '/../';
         $finder  = new Finder();
-        $finder->files()->in( $rootDir );
-        $finder->depth( '== 0' );
-        $finder->name( $filename );
+        $finder->files()->in($rootDir);
+        $finder->depth('== 0');
+        $finder->name($filename);
 
         if ($finder->count() == 0) {
-            $formatter      = $this->getHelperSet()->get( 'formatter' );
-            $errorMessages  = array( '', sprintf('No %s found', $filename), '' );
-            $formattedBlock = $formatter->formatBlock( $errorMessages, 'error' );
-            $output->writeln( $formattedBlock );
-            exit( 1 );
+            $formatter      = $this->getHelperSet()->get('formatter');
+            $errorMessages  = array('', sprintf('No %s found', $filename), '');
+            $formattedBlock = $formatter->formatBlock($errorMessages, 'error');
+            $output->writeln($formattedBlock);
+            exit(1);
         }
 
         foreach ($finder as $file) {
-            $fileContent = json_decode( $file->getContents(), true );
+            $fileContent = json_decode($file->getContents(), true);
         }
 
         return $fileContent;
@@ -443,7 +446,7 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
      */
     protected function getKernel()
     {
-        $kernel = $this->getContainer()->get( 'kernel' );
+        $kernel = $this->getContainer()->get('kernel');
 
         return $kernel;
     }
