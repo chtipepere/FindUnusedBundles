@@ -41,60 +41,60 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
 
         $this->removeItSelf();
 
-        $this->checkComposer( $output );
+        $this->checkComposer($output);
 
         $env = $kernel->getEnvironment();
-        $this->checkYamlFile( 'config.yml', $output);
-        $this->checkYamlFile( sprintf('config_%s.yml', $env), $output);
+        $this->checkYamlFile('config.yml', $output);
+        $this->checkYamlFile(sprintf('config_%s.yml', $env), $output);
 
-        $this->checkYamlFile( 'security.yml', $output);
-        $this->checkYamlFile( sprintf('security_%s.yml', $env), $output);
+        $this->checkYamlFile('security.yml', $output);
+        $this->checkYamlFile(sprintf('security_%s.yml', $env), $output);
 
-        $this->checkRouting( $output );
+        $this->checkRouting($output);
 
-        $this->checkCode( $output );
+        $this->checkCode($output);
 
-        $this->checkTwigExtension( $output );
+        $this->checkTwigExtension($output);
 
-        $this->outputResult( $output );
+        $this->outputResult($output);
     }
 
     /**
      * @param string $file
      */
-    protected function checkYamlFile( $file, OutputInterface $output )
+    protected function checkYamlFile($file, OutputInterface $output)
     {
-        $configDirectories = array( $this->getContainer()->get( 'kernel' )->getRootDir() . '/config' );
+        $configDirectories = array($this->getKernel()->getRootDir() . '/config');
 
-        $locator  = new FileLocator( $configDirectories );
+        $locator = new FileLocator($configDirectories);
         try {
-            $yamlFile = $locator->locate( $file, null, false );
+            $yamlFile = $locator->locate($file, null, false);
         } catch (\InvalidArgumentException $exc) {
             return;
         }
 
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-            $output->writeln( sprintf('----- Check %s -----', $file ));
+            $output->writeln(sprintf('----- Check %s -----', $file));
         }
 
-        $configValues        = Yaml::parse( file_get_contents( $yamlFile[0] ) );
+        $configValues        = Yaml::parse(file_get_contents($yamlFile[0]));
         $bundlesUsedInConfig = array();
 
         /** @var Bundle $bundle */
         foreach ($this->loadedBundles as $bundleKey => $bundle) {
-            $configClassName = sprintf( '%s\DependencyInjection\Configuration', $bundle->getNamespace() );
+            $configClassName = sprintf('%s\DependencyInjection\Configuration', $bundle->getNamespace());
 
-            if (false === class_exists( $configClassName )) {
-                $configClassName = sprintf( '%s\DependencyInjection\MainConfiguration', $bundle->getNamespace() );
+            if (false === class_exists($configClassName)) {
+                $configClassName = sprintf('%s\DependencyInjection\MainConfiguration', $bundle->getNamespace());
                 if (false === class_exists($configClassName)) {
                     continue;
                 }
-                $config          = new $configClassName( array(), array() );
+                $config = new $configClassName(array(), array());
             } else {
                 if ($bundle->getName() === 'AsseticBundle') {
-                    $config = new $configClassName( array() );
+                    $config = new $configClassName(array());
                 } else {
-                    $config = new $configClassName( false );
+                    $config = new $configClassName(false);
                 }
             }
 
@@ -129,8 +129,7 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
             foreach ($router->getRouteCollection()->all() as $route) {
                 $defaults = $route->getDefaults();
                 if (isset($defaults['_controller']) && preg_match(sprintf('#%s#',
-                        addslashes($bundle->getNamespace())), $defaults['_controller'])
-                ) {
+                        addslashes($bundle->getNamespace())), $defaults['_controller'])) {
                     $bundlesUsedInRouting[] = $bundle;
                     unset($this->bundles[$bundleKey]);
                     continue 2;
@@ -374,9 +373,9 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         $rootDir        = $this->getKernel()->getRootDir() . '/../';
         $finder         = new Finder();
 
-        $finder->files()->in( $rootDir );
-        $finder->depth( '== 0' );
-        $finder->name( $filename );
+        $finder->files()->in($rootDir);
+        $finder->depth('== 0');
+        $finder->name($filename);
 
         if ($finder->count() == 0) {
             throw new \RuntimeException(sprintf('No %s found', $filename));
