@@ -378,7 +378,7 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         $finder->name($filename);
 
         if ($finder->count() == 0) {
-            throw new \RuntimeException(sprintf('No %s found', $filename));
+            throw new \RuntimeException(sprintf('No %s found in %s', $filename, $rootDir));
         }
 
         foreach ($finder as $file) {
@@ -396,6 +396,16 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
     public function getBundles()
     {
         return $this->bundles;
+    }
+
+    public function setPackages($packages)
+    {
+        $this->packages = $packages;
+    }
+
+    public function getPackages()
+    {
+        return $this->packages;
     }
 
     public function setLoadedBundles($bundles)
@@ -427,7 +437,12 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
      */
     protected function findUsageInCode($key)
     {
-        return exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
+        return $this->exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getKernel()->getRootDir() . '/../src'));
+    }
+
+    protected function exec($command)
+    {
+        return exec($command);
     }
 
     /**

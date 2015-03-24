@@ -85,4 +85,119 @@ class FindUnusedBundlesCommandTest extends \PHPUnit_Framework_TestCase
 
         $this->invokeMethod($command, 'execute', array($input, $output));
     }
+
+    public function testFindUsageWhenUsageIsInCode()
+    {
+        $command = $this->getMockBuilder('Doh\FindUnusedBundlesBundle\Command\FindUnusedBundlesCommand')
+                        ->setMethods(array('findUsageInCode', 'findUsageUsingAutoload'))
+                        ->getMock();
+
+        $key                = 'key';
+        $packageName        = 'packageName';
+        $composerContent    = 'composerContent';
+
+        $command->setPackages(array('foo' => 'bar', 'packageName' => 'package'));
+
+        $command->expects($this->once())
+            ->method('findUsageInCode')
+            ->with($key)
+            ->will($this->returnValue('grep'));
+
+        $command->expects($this->never())
+            ->method('findUsageUsingAutoload');
+
+        $this->assertEquals(2, count($command->getPackages()));
+        $this->invokeMethod($command, 'findUsage', array($key, $packageName, $composerContent));
+        $this->assertEquals(1, count($command->getPackages()));
+    }
+
+    public function testFindUsageWhenUsageIsInAutoload()
+    {
+        $command = $this->getMockBuilder('Doh\FindUnusedBundlesBundle\Command\FindUnusedBundlesCommand')
+                        ->setMethods(array('findUsageInCode', 'findUsageUsingAutoload'))
+                        ->getMock();
+
+        $key                = 'key';
+        $packageName        = 'packageName';
+        $composerContent    = 'composerContent';
+
+        $command->expects($this->once())
+            ->method('findUsageInCode')
+            ->with($key)
+            ->will($this->returnValue(''));
+
+        $command->expects($this->once())
+            ->method('findUsageUsingAutoload')
+            ->with($key, $packageName, $composerContent);
+
+        $this->invokeMethod($command, 'findUsage', array($key, $packageName, $composerContent));
+    }
+
+    public function testFindUsageInCode()
+    {
+        $key     = 'key';
+        $kernel = $this->getMockBuilder('Symfony\Component\HttpKernel\Tests\Fixtures\KernelForTest')
+            ->disableOriginalConstructor()
+            ->setMethods(array('getRootDir'))
+            ->getMock();
+
+        $kernel->expects($this->once())
+            ->method('getRootDir')
+            ->will($this->returnValue('/foo'));
+
+        $command = $this->getMockBuilder('Doh\FindUnusedBundlesBundle\Command\FindUnusedBundlesCommand')
+                        ->setMethods(array('getKernel', 'exec'))
+                        ->getMock();
+
+        $command->expects($this->once())
+            ->method('getKernel')
+            ->will($this->returnValue($kernel));
+
+        $command->expects($this->once())
+            ->method('exec')
+            ->with("grep -R 'key' /foo/../src");
+
+        $this->invokeMethod($command, 'findUsageInCode', array($key));
+    }
+
+    public function testGetFileContentThrowException()
+    {
+        $filename = 'README.md';
+        $command = $this->getMockBuilder('Doh\FindUnusedBundlesBundle\Command\FindUnusedBundlesCommand')
+                        ->setMethods(array('getKernel'))
+                        ->getMock();
+
+        $command->expects($this->once())
+                ->method('getKernel')
+                ->will($this->returnValue(new KernelForTest('test', true)));
+
+        $this->setExpectedException('RuntimeException');
+
+        $this->invokeMethod($command, 'getFileContent', array($filename));
+    }
+
+    public function testGetFileContentReturnContents()
+    {
+        $filename = 'composer.json';
+
+        $kernel = $this->getMockBuilder('Symfony\Component\HttpKernel\Tests\Fixtures\KernelForTest')
+                       ->disableOriginalConstructor()
+                       ->setMethods(array('getRootDir'))
+                       ->getMock();
+
+        $kernel->expects($this->once())
+               ->method('getRootDir')
+               ->will($this->returnValue(__DIR__ . '/..'));
+
+        $command = $this->getMockBuilder('Doh\FindUnusedBundlesBundle\Command\FindUnusedBundlesCommand')
+                        ->setMethods(array('getKernel'))
+                        ->getMock();
+
+        $command->expects($this->once())
+                ->method('getKernel')
+                ->will($this->returnValue($kernel));
+
+        $fileContent = $this->invokeMethod($command, 'getFileContent', array($filename));
+        $this->assertNotEmpty($fileContent);
+    }
 }
