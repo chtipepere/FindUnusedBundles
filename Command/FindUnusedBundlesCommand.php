@@ -157,7 +157,7 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         /** @var Bundle $bundle */
         foreach ($this->loadedBundles as $bundleKey => $bundle) {
             $grepUsage = exec(sprintf('grep -R "%s" %s', addslashes(addslashes($bundle->getNamespace())),
-                $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
+                $this->getKernel()->getRootDir() . '/../src'));
 
             if (strlen($grepUsage) > 0) {
                 $bundlesUsedInCode[] = $bundle;
@@ -210,8 +210,8 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
                 $output->writeln('Namespace: ' . $namespace[1]);
             }
 
-            $namespace          = explode(';', $namespace[1]);
-            $className          = $namespace[0] . '\\' . $extensionClassName;
+            $namespace = explode(';', $namespace[1]);
+            $className = $namespace[0] . '\\' . $extensionClassName;
 
             if (OutputInterface::VERBOSITY_VERY_VERBOSE <= $output->getVerbosity()) {
                 $output->writeln('Classname: ' . $className);
@@ -225,7 +225,7 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
             );
 
             $extensionUsage = exec(sprintf('grep -R %s %s', $extension->getName(),
-                $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
+                $this->getKernel()->getRootDir() . '/../src'));
 
             if (strlen($extensionUsage) > 0) {
                 $bundlesUsedInTwigExtension[] = $bundle;
@@ -248,8 +248,8 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
      */
     protected function checkComposer(OutputInterface $output)
     {
-        $composerLockContent    = $this->getFileContent('composer.lock', $output);
-        $composerContent        = $this->getFileContent('composer.json', $output);
+        $composerLockContent    = $this->getFileContent('composer.lock');
+        $composerContent        = $this->getFileContent('composer.json');
 
         unset($composerContent['require']['php']);
 
@@ -260,46 +260,21 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         $this->packages = $composerContent['require'];
 
         foreach ($this->packages as $packageName => $packageVersion) {
-            $grep = null;
             foreach ($composerLockContent['packages'] as $packageKey => $package) {
-                if ($package['name'] == $packageName) {
 
-                    if (isset($package['autoload']['psr-0'])) {
-                        foreach ($package['autoload']['psr-0'] as $key => $value) {
-                            $grep = exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
-                        }
-                    } elseif (isset($package['autoload']['psr-1'])) {
-                        foreach ($package['autoload']['psr-1'] as $key => $value) {
-                            $grep = exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
-                        }
-                    } elseif (isset($package['autoload']['psr-4'])) {
-                        foreach ($package['autoload']['psr-4'] as $key => $value) {
-                            $grep = exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
-                        }
-                    }
-                }
-
-                if (strlen($grep) > 0) {
-                    unset($this->packages[$packageName]);
-                }
-            }
-        }
-
-        foreach ($this->packages as $packageName => $packageVersion) {
-            $grep = null;
-            foreach ($composerLockContent['packages'] as $packageKey => $package) {
                 if ($package['name'] == $packageName) {
                     if (isset($package['autoload']['psr-0'])) {
                         foreach ($package['autoload']['psr-0'] as $key => $value) {
-                            $this->findUsageUsingAutoload($key, $packageName, $composerContent);
+
+                            $this->findUsage($key, $packageName, $composerContent);
                         }
                     } elseif (isset($package['autoload']['psr-1'])) {
                         foreach ($package['autoload']['psr-1'] as $key => $value) {
-                            $this->findUsageUsingAutoload($key, $packageName, $composerContent);
+                            $this->findUsage($key, $packageName, $composerContent);
                         }
                     } elseif (isset($package['autoload']['psr-4'])) {
                         foreach ($package['autoload']['psr-4'] as $key => $value) {
-                            $this->findUsageUsingAutoload($key, $packageName, $composerContent);
+                            $this->findUsage($key, $packageName, $composerContent);
                         }
                     }
                 }
@@ -389,25 +364,22 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
     }
 
     /**
-     * @param string            $filename
-     * @param OutputInterface   $output
+     * @param string $filename
      *
      * @return array
      */
-    protected function getFileContent($filename, OutputInterface $output)
+    protected function getFileContent($filename)
     {
-        $rootDir = $this->getContainer()->get('kernel')->getRootDir() . '/../';
-        $finder  = new Finder();
-        $finder->files()->in($rootDir);
-        $finder->depth('== 0');
-        $finder->name($filename);
+        $fileContent    = null;
+        $rootDir        = $this->getKernel()->getRootDir() . '/../';
+        $finder         = new Finder();
+
+        $finder->files()->in( $rootDir );
+        $finder->depth( '== 0' );
+        $finder->name( $filename );
 
         if ($finder->count() == 0) {
-            $formatter      = $this->getHelperSet()->get('formatter');
-            $errorMessages  = array('', sprintf('No %s found', $filename), '');
-            $formattedBlock = $formatter->formatBlock($errorMessages, 'error');
-            $output->writeln($formattedBlock);
-            exit(1);
+            throw new \RuntimeException(sprintf('No %s found', $filename));
         }
 
         foreach ($finder as $file) {
@@ -446,9 +418,31 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
      */
     protected function getKernel()
     {
-        $kernel = $this->getContainer()->get('kernel');
+        return $this->getContainer()->get('kernel');
+    }
 
-        return $kernel;
+    /**
+     * @param $key
+     *
+     * @return string
+     */
+    protected function findUsageInCode($key)
+    {
+        return exec(sprintf("grep -R '%s' %s", addslashes($key), $this->getContainer()->get('kernel')->getRootDir() . '/../src'));
+    }
+
+    /**
+     * @param $key
+     * @param $packageName
+     * @param $composerContent
+     */
+    protected function findUsage($key, $packageName, $composerContent)
+    {
+        if (strlen($this->findUsageInCode($key)) > 0) {
+            unset($this->packages[$packageName]);
+        } else {
+            $this->findUsageUsingAutoload($key, $packageName, $composerContent);
+        }
     }
 
 }
