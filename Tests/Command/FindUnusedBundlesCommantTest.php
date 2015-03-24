@@ -4,6 +4,7 @@ namespace Doh\FindUnusedBundlesBundle\Tests;
 
 use Doh\FindUnusedBundlesBundle\Command\FindUnusedBundlesCommand;
 use Symfony\Component\HttpKernel\Tests\Bundle\BundleTest;
+use Symfony\Component\HttpKernel\Tests\Fixtures\KernelForTest;
 
 class FindUnusedBundlesCommandTest extends \PHPUnit_Framework_TestCase
 {
@@ -80,7 +81,7 @@ class FindUnusedBundlesCommandTest extends \PHPUnit_Framework_TestCase
 
         $command->expects($this->once())
             ->method('getKernel')
-            ->will($this->returnValue(new Symfony\Component\HttpKernel\Tests\Fixtures\KernelForTest('test', true)));
+            ->will($this->returnValue(new KernelForTest('test', true)));
 
         $this->invokeMethod($command, 'execute', array($input, $output));
     }

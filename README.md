@@ -8,7 +8,7 @@ Find unused bundles or packages
 [![Total Downloads](https://poser.pugx.org/doh/find-unused-bundles-bundle/downloads.svg)](https://packagist.org/packages/doh/find-unused-bundles-bundle)
 [![Latest Unstable Version](https://poser.pugx.org/doh/find-unused-bundles-bundle/v/unstable.svg)](https://packagist.org/packages/doh/find-unused-bundles-bundle)
 [![License](https://poser.pugx.org/doh/find-unused-bundles-bundle/license.svg)](https://packagist.org/packages/doh/find-unused-bundles-bundle)
-[![SensioLabsInsight](https://insight.sensiolabs.com/projects/1ac42dd7-7d59-41c9-8f0b-653353ddfd59/big.png)](https://insight.sensiolabs.com/projects/1ac42dd7-7d59-41c9-8f0b-653353ddfd59)
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/1ac42dd7-7d59-41c9-8f0b-653353ddfd59/mini.png)](https://insight.sensiolabs.com/projects/1ac42dd7-7d59-41c9-8f0b-653353ddfd59)
 
 Repository address: https://github.com/chtipepere/FindUnusedBundles
 
