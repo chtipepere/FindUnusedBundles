@@ -200,4 +200,30 @@ class FindUnusedBundlesCommandTest extends \PHPUnit_Framework_TestCase
         $fileContent = $this->invokeMethod($command, 'getFileContent', array($filename));
         $this->assertNotEmpty($fileContent);
     }
+
+    public function testGetKernel()
+    {
+        $command = $this->getMockBuilder('Doh\FindUnusedBundlesBundle\Command\FindUnusedBundlesCommand')
+                        ->setMethods(array('container'))
+                        ->getMock();
+
+        $container = $this->getMockForAbstractClass('Symfony\Component\DependencyInjection\ContainerInterface');
+
+        $container->expects($this->once())
+            ->method('get')
+            ->with('kernel')
+            ->will($this->returnValue(new KernelForTest('test', true)));
+
+        $command->setContainer($container);
+
+        $this->invokeMethod($command, 'getKernel');
+    }
+
+    public function testSetLoadedBundles()
+    {
+        $bundles = 'foo';
+        $command = new FindUnusedBundlesCommand();
+        $command->setLoadedBundles($bundles);
+        $this->assertEquals('foo', $command->getLoadedBundles());
+    }
 }

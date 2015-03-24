@@ -413,6 +413,11 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         $this->loadedBundles = $bundles;
     }
 
+    public function getLoadedBundles()
+    {
+        return $this->loadedBundles;
+    }
+
     public function removeItSelf()
     {
         foreach ($this->bundles as $key => $bundle) {
