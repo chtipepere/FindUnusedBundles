@@ -35,14 +35,15 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
 
     protected function execute( InputInterface $input, OutputInterface $output )
     {
-        $this->setBundles($this->getContainer()->get( 'kernel' )->getBundles());
-        $this->setLoadedBundles($this->getContainer()->get( 'kernel' )->getBundles());
+        $kernel = $this->getKernel();
+        $this->setBundles($kernel->getBundles());
+        $this->setLoadedBundles($kernel->getBundles());
 
         $this->removeItSelf();
 
         $this->checkComposer( $output );
 
-        $env = $this->getContainer()->get('kernel')->getEnvironment();
+        $env = $kernel->getEnvironment();
         $this->checkYamlFile( 'config.yml', $output);
         $this->checkYamlFile( sprintf('config_%s.yml', $env), $output);
 
@@ -361,15 +362,6 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
         }
     }
 
-    public function removeItSelf()
-    {
-        foreach ($this->bundles as $key => $bundle) {
-            if ($bundle->getName() == self::DOH_FIND_UNUSED_BUNDLES_BUNDLE_NAME) {
-                unset($this->bundles[$key]);
-            }
-        }
-    }
-
     /**
      * @param $key
      * @param $packageName
@@ -435,6 +427,25 @@ class FindUnusedBundlesCommand extends ContainerAwareCommand
     public function setLoadedBundles($bundles)
     {
         $this->loadedBundles = $bundles;
+    }
+
+    public function removeItSelf()
+    {
+        foreach ($this->bundles as $key => $bundle) {
+            if ($bundle->getName() == self::DOH_FIND_UNUSED_BUNDLES_BUNDLE_NAME) {
+                unset($this->bundles[$key]);
+            }
+        }
+    }
+
+    /**
+     * @return object
+     */
+    protected function getKernel()
+    {
+        $kernel = $this->getContainer()->get( 'kernel' );
+
+        return $kernel;
     }
 
 }
