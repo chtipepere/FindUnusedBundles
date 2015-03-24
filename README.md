@@ -2,6 +2,8 @@ Find unused bundles or packages
 =================================
 
 [![Build Status](https://travis-ci.org/chtipepere/FindUnusedBundles.svg?branch=master)](https://travis-ci.org/chtipepere/FindUnusedBundles)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/chtipepere/FindUnusedBundles/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/chtipepere/FindUnusedBundles/?branch=master)
+[![Code Coverage](https://scrutinizer-ci.com/g/chtipepere/FindUnusedBundles/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/chtipepere/FindUnusedBundles/?branch=master)
 
 Repository address: https://github.com/chtipepere/FindUnusedBundles
 
