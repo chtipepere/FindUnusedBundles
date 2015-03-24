@@ -29,7 +29,7 @@ class FindUnusedBundlesCommandTest extends \PHPUnit_Framework_TestCase
         $bundle->setName('foo');
 
         $bundle2 = new BundleTest();
-        $bundle2->setName( FindUnusedBundlesCommand::DOH_FIND_UNUSED_BUNDLES_BUNDLE_NAME);
+        $bundle2->setName(FindUnusedBundlesCommand::DOH_FIND_UNUSED_BUNDLES_BUNDLE_NAME);
         $bundles = array($bundle, $bundle2);
 
         $command->setBundles($bundles);
